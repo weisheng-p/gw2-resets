@@ -17,4 +17,4 @@ If you choose to use them, please be aware of some of the [limitation](https://g
 - APIs are slightly different
 - Formatting of dates are not Temporal's responsiblity, so it can be rough
 
-You can at `dayjs` branch to compare the difference in implementations
+You can look at `dayjs` branch to compare the difference in implementations
