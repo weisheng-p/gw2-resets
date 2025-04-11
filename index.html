@@ -126,21 +126,21 @@
         if (now.isAfter(dailyReset)) {
             dailyReset = dailyReset.add(1, 'day');
         }
-        select('#next-daily').innerText = dailyReset.tz(tz).format('D MMM YYYY, h:mm A');
+        select('#next-daily').innerText = dailyReset.add(totalOffset, 'minutes').tz(tz).format('D MMM YYYY, h:mm A');
         select('#daily-countdown').innerText = diff(dailyReset, now);
 
         let weekyReset = dayjs.utc().startOf('isoWeek').add('7.5', 'hours');
         if (now.isAfter(weekyReset)) {
             weekyReset = weekyReset.add(1, 'week');
         }
-        select('#next-weekly').innerText = weekyReset.tz(tz).format('D MMM YYYY, h:mm A');
+        select('#next-weekly').innerText = weekyReset.add(totalOffset, 'minutes').tz(tz).format('D MMM YYYY, h:mm A');
         select('#weekly-countdown').innerText = diff(weekyReset, now);
 
         let wvwReset = dayjs.utc().startOf('isoWeek').add(5 * 24 + 2, 'hours');
         if (now.isAfter(wvwReset)) {
             wvwReset = wvwReset.add(1, 'week');
         }
-        select('#next-wvw').innerText = wvwReset.tz(tz).format('D MMM YYYY, h:mm A');
+        select('#next-wvw').innerText = wvwReset.add(totalOffset, 'minutes').tz(tz).format('D MMM YYYY, h:mm A');
         select('#wvw-countdown').innerText = diff(wvwReset, now);
         window.setTimeout(showNext, 1000 / 3);
     }
