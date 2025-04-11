@@ -119,7 +119,7 @@
         output.push(`${secs}s`);
         return output.join(' ');
     }
-    function showNext(tz) {
+    function showNext() {
         const now = dayjs.utc().add(totalOffset, 'minutes');
         select('#current').innerText = now.tz(tz).format('lll');
         let dailyReset = dayjs.utc().startOf('day');
@@ -144,7 +144,7 @@
         select('#wvw-countdown').innerText = diff(wvwReset, now);
         window.setTimeout(showNext, 1000 / 3);
     }
-    showNext(tz);
+    showNext();
 </script>
 
 </html>
