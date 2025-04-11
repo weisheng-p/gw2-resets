@@ -3,7 +3,8 @@
 
 <head>
     <title>GW2 Reset Timer &amp; countdown</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" integrity="sha384-L1dWfspMTHU/ApYnFiMz2QID/PlP1xCW9visvBdbEkOLkSSWsP6ZJWhPw6apiXxU" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+        integrity="sha384-L1dWfspMTHU/ApYnFiMz2QID/PlP1xCW9visvBdbEkOLkSSWsP6ZJWhPw6apiXxU" crossorigin="anonymous">
 </head>
 
 <body>
@@ -42,109 +43,130 @@
             </fieldset>
             <fieldset class="grid">
                 <label>Hour: <input name="hours" type="number" min="0" max="23" placeholder="hours" value="0"></label>
-                <label>Minutes: <input name="minutes" type="number" min="0" max="59" placeholder="minutes" value="0"></label>
+                <label>Minutes: <input name="minutes" type="number" min="0" max="59" placeholder="minutes"
+                        value="0"></label>
             </fieldset>
         </small>
 
     </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/temporal-polyfill@0.3.0/global.min.js"
+        integrity="sha512-4V50NWjNLKBH60KkunQBWbMwv4pA5NIstr1F2Ossnb691knDWKYaHpGvS1bEyIupZnUnToVz5UQSZM/HIlj/tQ=="
+        crossorigin="anonymous"></script>
+    <script>
+        "use strict"
+        let totalOffset = 0;
+        function select(selector) {
+            const doc = document.querySelectorAll(selector);
+            if (doc.length > 0) {
+                return doc[0];
+            }
+            return {
+                "innerText": "",
+                "value": null
+            };
+        }
+
+        function updateOffset() {
+            let hours = select('[name=hours]').value || '0';
+            let minutes = select('[name=minutes]').value || '0';
+            let negative = select('[name=negative]').checked;
+            try {
+                hours = parseInt(hours);
+            } catch (e) {
+                hours = 0;
+                select('[name=hours]').value = '0';
+            }
+            try {
+                minutes = parseInt(minutes);
+            } catch (e) {
+                minutes = 0;
+                select('[name=minutes]').value = '0';
+            }
+            totalOffset = (hours * 60 + minutes) * (negative ? -1 : 1);
+        }
+        select('[name=hours]').addEventListener('keyup', updateOffset);
+        select('[name=hours]').addEventListener('change', updateOffset);
+        select('[name=minutes]').addEventListener('keyup', updateOffset);
+        select('[name=minutes]').addEventListener('change', updateOffset);
+        select('[name=negative]').addEventListener('change', updateOffset);
+        const tz = Temporal.Now.timeZoneId().toString()
+        select('#timezone').innerText = tz;
+
+        function diff(day1, day2) {
+
+            const seconds = day2.until(day1).total('seconds')
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            const output = [];
+            if (days > 0) {
+                output.push(`${days}d`);
+            }
+            if (hours > 0 || days > 0) {
+                output.push(`${hours}h`);
+            }
+            if (hours > 0 || days > 0 || minutes > 0) {
+                output.push(`${minutes}m`);
+            }
+            output.push(`${secs}s`);
+            return output.join(' ');
+        }
+        function getStartOfWeek(day) {
+            const dayOfWeek = day.dayOfWeek;
+            return day.subtract({
+                days: dayOfWeek - 1,
+            }).with({
+                hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0
+            });
+        }
+        function adjustWithOffset(day) {
+            return day.add(
+                {
+                    minutes: totalOffset
+                });
+        }
+        function showNext() {
+            const now = adjustWithOffset(Temporal.Now.zonedDateTimeISO())
+            select('#current').innerText = now.toLocaleString();
+            const utcNow = now.withTimeZone('Etc/utc');
+            let dailyReset = adjustWithOffset(utcNow.startOfDay());
+            if (Temporal.ZonedDateTime.compare(now, dailyReset) == 1) {
+                dailyReset = dailyReset.add({
+                    days: 1
+                });
+            }
+            select('#next-daily').innerText = dailyReset.withTimeZone(tz).toLocaleString();
+            select('#daily-countdown').innerText = diff(dailyReset, now);
+            const startOfWeek = adjustWithOffset(getStartOfWeek(utcNow));
+
+            let weekyReset = startOfWeek.add({
+                hours: 7,
+                minutes: 30,
+            });
+            if (Temporal.ZonedDateTime.compare(now, weekyReset) == 1) {
+                weekyReset = weekyReset.add({
+                    days: 7
+                });
+            }
+            select('#next-weekly').innerText = weekyReset.withTimeZone(tz).toLocaleString();
+            select('#weekly-countdown').innerText = diff(weekyReset, now);
+
+            let wvwReset = startOfWeek.add({
+                hours: 5 * 24 + 2
+            });
+            if (Temporal.ZonedDateTime.compare(now, wvwReset) == 1) {
+                wvwReset = wvwReset.add({
+                    days: 7
+                });
+            }
+            select('#next-wvw').innerText = wvwReset.withTimeZone(tz).toLocaleString();
+            select('#wvw-countdown').innerText = diff(wvwReset, now);
+            window.setTimeout(showNext, 1000 / 3);
+        }
+        showNext();
+    </script>
 </body>
-<script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/dayjs.min.js" integrity="sha256-nP25Pzivzy0Har7NZtMr/TODzfGWdlTrwmomYF2vQXM=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/utc.js" integrity="sha256-qDfIIxqpRhYWa543p6AHZ323xT3B8O6iLZFUAWtEQJw=" crossorigin="anonymous"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/isoWeek.js" integrity="sha256-mTe29uf4Uv0YCnXQLyIymKRUGozsQV0Mra1d/efUCSk=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/timezone.js" integrity="sha256-qChvIvJkeTbV5m0C0KrBl+sOicaIklgEk82lwpDSkZE=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/localizedFormat.js" integrity="sha256-g+gxm1xmRq4IecSRujv2eKyUCo/i1b5kRnWNcSbYEO0=" crossorigin="anonymous"></script>
-<script>
-    "use strict"
-    dayjs.extend(window.dayjs_plugin_utc);
-    dayjs.extend(window.dayjs_plugin_timezone);
-    dayjs.extend(window.dayjs_plugin_isoWeek);
-    dayjs.extend(window.dayjs_plugin_localizedFormat);
-    let totalOffset = 0;
-    
-    function select(selector) {
-        const doc = document.querySelectorAll(selector);
-        if (doc.length > 0) {
-            return doc[0];
-        }
-        return {
-            "innerText": "",
-            "value": null
-        };
-    }
-    
-    function updateOffset() {
-        let hours = select('[name=hours]').value || '0';
-        let minutes = select('[name=minutes]').value || '0';
-        let negative = select('[name=negative]').checked;
-        try {
-            hours = parseInt(hours);
-        } catch (e) {
-            hours = 0;
-            select('[name=hours]').value = '0';
-        }
-        try {
-            minutes = parseInt(minutes);
-        } catch (e) {
-            minutes = 0;
-            select('[name=minutes]').value = '0';
-        }
-        totalOffset = (hours * 60 + minutes) * (negative ? -1 : 1);
-    }
-    select('[name=hours]').addEventListener('keyup', updateOffset);
-    select('[name=hours]').addEventListener('change', updateOffset);
-    select('[name=minutes]').addEventListener('keyup', updateOffset);
-    select('[name=minutes]').addEventListener('change', updateOffset);
-    select('[name=negative]').addEventListener('change', updateOffset);
-    const tz = dayjs.tz.guess();
-    select('#timezone').innerText = tz;
-
-    function diff(day1, day2) {
-        const d = day1.diff(day2)
-        const seconds = Math.floor(d / 1000);
-        const days = Math.floor(seconds / 86400);
-        const hours = Math.floor((seconds % 86400) / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = seconds % 60;
-        const output = [];
-        if (days > 0) {
-            output.push(`${days}d`);
-        }
-        if (hours > 0 || days > 0) {
-            output.push(`${hours}h`);
-        }
-        if (hours > 0 || days > 0 || minutes > 0) {
-            output.push(`${minutes}m`);
-        }
-        output.push(`${secs}s`);
-        return output.join(' ');
-    }
-    function showNext(tz) {
-        const now = dayjs.utc().add(totalOffset, 'minutes');
-        select('#current').innerText = now.tz(tz).format('lll');
-        let dailyReset = dayjs.utc().startOf('day');
-        if (now.isAfter(dailyReset)) {
-            dailyReset = dailyReset.add(1, 'day');
-        }
-        select('#next-daily').innerText = dailyReset.tz(tz).format('D MMM YYYY, h:mm A');
-        select('#daily-countdown').innerText = diff(dailyReset, now);
-
-        let weekyReset = dayjs.utc().startOf('isoWeek').add('7.5', 'hours');
-        if (now.isAfter(weekyReset)) {
-            weekyReset = weekyReset.add(1, 'week');
-        }
-        select('#next-weekly').innerText = weekyReset.tz(tz).format('D MMM YYYY, h:mm A');
-        select('#weekly-countdown').innerText = diff(weekyReset, now);
-
-        let wvwReset = dayjs.utc().startOf('isoWeek').add(5 * 24 + 2, 'hours');
-        if (now.isAfter(wvwReset)) {
-            wvwReset = wvwReset.add(1, 'week');
-        }
-        select('#next-wvw').innerText = wvwReset.tz(tz).format('D MMM YYYY, h:mm A');
-        select('#wvw-countdown').innerText = diff(wvwReset, now);
-        window.setTimeout(showNext, 1000 / 3);
-    }
-    showNext(tz);
-</script>
-
 </html>
+
